@@ -2,7 +2,7 @@
   "name": "pm-copilot-ui",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://[your-github-username].github.io/pm-copilot",
+  "homepage": "https://spiritualnoble.github.io/knowledge-assistant",
   "dependencies": {
     "@headlessui/react": "^1.7.17",
     "@heroicons/react": "^2.0.18",
