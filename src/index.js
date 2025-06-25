@@ -6,7 +6,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 
 // 根据GitHub Pages的部署路径调整basename
-const basename = process.env.NODE_ENV === 'production' ? '/pm-copilot' : '/';
+const basename = process.env.NODE_ENV === 'production' ? '/knowledge-assistant' : '/';
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
