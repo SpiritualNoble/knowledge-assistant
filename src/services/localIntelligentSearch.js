@@ -83,7 +83,7 @@ class LocalIntelligentSearch {
           title,
           content: [],
           lineStart: i,
-          keywords: this.extractKeywords(title)
+          keywords: new Set(this.extractKeywords(title))
         };
         
         // 添加关键词

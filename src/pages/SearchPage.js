@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { searchKnowledge } from '../services/api';
-import localIntelligentSearch from '../services/localIntelligentSearch';
+import simpleDocumentService from '../services/simpleDocumentService';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -28,25 +28,25 @@ export default function SearchPage({ user }) {
     setSearchMetadata(null);
 
     try {
-      console.log('🧠 开始本地智能搜索:', query);
+      console.log('🔍 开始简单搜索:', query);
       
-      // 使用本地智能搜索
-      const searchResult = await localIntelligentSearch.search(query, user.id);
+      // 使用简单文档服务搜索
+      const searchResult = await simpleDocumentService.search(query, user.id);
       
-      console.log('🔍 搜索结果:', searchResult);
+      console.log('📋 搜索结果:', searchResult);
       
       // 设置智能回答
       setIntelligentAnswer(searchResult.answer);
       
       // 转换结果格式
       const formattedResults = searchResult.results.map((result, index) => ({
-        id: `result_${Date.now()}_${index}`,
-        content: result.content || result.answer || '',
+        id: result.id || `result_${Date.now()}_${index}`,
+        content: result.content || '',
         score: result.score,
         metadata: {
           source: result.docTitle || '文档',
-          title: result.section || '相关内容',
-          category: result.type || 'general',
+          title: result.title || '相关内容',
+          category: 'general',
           tags: [],
           uploadedAt: new Date().toISOString()
         }
@@ -55,12 +55,12 @@ export default function SearchPage({ user }) {
       setResults(formattedResults);
       setSearchMetadata({
         totalResults: searchResult.totalFound || 0,
-        responseTime: 100,
-        searchType: 'local_intelligent',
+        responseTime: 50,
+        searchType: 'simple_search',
         confidence: searchResult.confidence || 0
       });
       
-      console.log('✅ 本地智能搜索完成，找到', formattedResults.length, '个结果');
+      console.log('✅ 搜索完成，找到', formattedResults.length, '个结果');
       
     } catch (err) {
       console.error('❌ 智能搜索失败:', err);
