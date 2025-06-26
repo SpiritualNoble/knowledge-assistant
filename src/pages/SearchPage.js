@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { searchKnowledge } from '../services/api';
-import simpleDocumentService from '../services/simpleDocumentService';
+import intelligentDocumentService from '../services/intelligentDocumentService';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -28,10 +28,10 @@ export default function SearchPage({ user }) {
     setSearchMetadata(null);
 
     try {
-      console.log('🔍 开始简单搜索:', query);
+      console.log('🧠 开始智能搜索:', query);
       
-      // 使用简单文档服务搜索
-      const searchResult = await simpleDocumentService.search(query, user.id);
+      // 使用智能文档服务搜索
+      const searchResult = await intelligentDocumentService.search(query, user.id);
       
       console.log('📋 搜索结果:', searchResult);
       
@@ -44,9 +44,9 @@ export default function SearchPage({ user }) {
         content: result.content || '',
         score: result.score,
         metadata: {
-          source: result.docTitle || '文档',
+          source: result.docTitle || result.title || '文档',
           title: result.title || '相关内容',
-          category: 'general',
+          category: result.type || 'general',
           tags: [],
           uploadedAt: new Date().toISOString()
         }
@@ -56,11 +56,13 @@ export default function SearchPage({ user }) {
       setSearchMetadata({
         totalResults: searchResult.totalFound || 0,
         responseTime: 50,
-        searchType: 'simple_search',
-        confidence: searchResult.confidence || 0
+        searchType: searchResult.searchType || 'intelligent',
+        confidence: searchResult.confidence || 0,
+        aiPowered: searchResult.aiPowered || false
       });
       
-      console.log('✅ 搜索完成，找到', formattedResults.length, '个结果');
+      console.log('✅ 智能搜索完成，找到', formattedResults.length, '个结果');
+      console.log('🤖 AI增强:', searchResult.aiPowered ? '是' : '否');
       
     } catch (err) {
       console.error('❌ 智能搜索失败:', err);

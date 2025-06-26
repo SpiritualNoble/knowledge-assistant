@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { uploadDocument, importExternalDocument } from '../services/api';
-import simpleDocumentService from '../services/simpleDocumentService';
+import intelligentDocumentService from '../services/intelligentDocumentService';
 
 export default function UploadPage({ user }) {
   const [file, setFile] = useState(null);
@@ -75,9 +75,9 @@ export default function UploadPage({ user }) {
       } catch (cloudError) {
         console.log('云端API不可用，使用本地存储:', cloudError.message);
         
-        // 云端API不可用，使用简单文档服务
-        console.log('📄 使用简单文档服务处理文档...');
-        const document = await simpleDocumentService.addDocument(
+        // 云端API不可用，使用智能文档服务
+        console.log('🧠 使用智能文档服务处理文档...');
+        const document = await intelligentDocumentService.addDocument(
           file,
           {
             title: title,

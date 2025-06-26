@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentTextIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import simpleDocumentService from '../services/simpleDocumentService';
+import intelligentDocumentService from '../services/intelligentDocumentService';
 
 const DocumentsPage = ({ user }) => {
   const [documents, setDocuments] = useState([]);
@@ -44,10 +44,10 @@ const DocumentsPage = ({ user }) => {
         console.log('云端API不可用，使用本地存储:', cloudError.message);
       }
       
-      // 云端API不可用，从简单文档服务获取
-      const localDocuments = await simpleDocumentService.getUserDocuments(user.id);
+      // 云端API不可用，从智能文档服务获取
+      const localDocuments = await intelligentDocumentService.getUserDocuments(user.id);
       setDocuments(localDocuments);
-      console.log('从简单文档服务获取文档:', localDocuments.length, '个');
+      console.log('从智能文档服务获取文档:', localDocuments.length, '个');
       
     } catch (error) {
       console.error('获取文档失败:', error);
@@ -81,10 +81,10 @@ const DocumentsPage = ({ user }) => {
         console.log('云端API不可用，从本地删除:', cloudError.message);
       }
       
-      // 从简单文档服务删除
-      await simpleDocumentService.deleteDocument(docId, user.id);
+      // 从智能文档服务删除
+      await intelligentDocumentService.deleteDocument(docId, user.id);
       setDocuments(documents.filter(doc => doc.id !== docId));
-      console.log('从简单文档服务删除文档成功');
+      console.log('从智能文档服务删除文档成功');
       
     } catch (error) {
       console.error('删除文档失败:', error);
