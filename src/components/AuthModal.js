@@ -9,6 +9,7 @@ import {
   checkPasswordStrength,
   sanitizeInput 
 } from '../utils/security';
+import { sendSMS, verifyVerificationCode } from '../services/mockSmsService';
 
 const AuthModal = ({ isOpen, onClose, onLogin }) => {
   const [isLoginMode, setIsLoginMode] = useState(true);
@@ -100,8 +101,6 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
   };
 
   const sendVerificationCode = async () => {
-    const clientIP = getClientIP();
-    
     // 检查短信发送限制
     if (!smsLimiter.canSendSMS(formData.phone)) {
       const remaining = smsLimiter.getDailyRemaining(formData.phone);
@@ -129,24 +128,15 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
 
     setSendingCode(true);
     try {
-      const response = await fetch('/api/auth/send-sms', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: formData.phone,
-          type: 'register',
-          captcha: captchaInput
-        })
-      });
-
-      if (response.ok) {
+      const result = await sendSMS(formData.phone, 'register');
+      
+      if (result.success) {
         smsLimiter.recordSMS(formData.phone);
         setCountdown(60);
         alert('验证码已发送，请查收短信');
         setErrors({...errors, phone: '', captcha: ''});
       } else {
-        const error = await response.json();
-        alert(error.message || '发送失败，请稍后重试');
+        alert(result.message || '发送失败，请稍后重试');
       }
     } catch (error) {
       console.error('发送验证码失败:', error);
@@ -175,27 +165,24 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
           return;
         }
 
-        const response = await fetch('/api/auth/login', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: sanitizeInput(formData.email),
-            password: formData.password
-          })
-        });
+        // 模拟登录API调用
+        await new Promise(resolve => setTimeout(resolve, 1000));
         
-        if (response.ok) {
-          const userData = await response.json();
-          loginLimiter.recordAttempt(formData.email, true);
-          localStorage.setItem('userToken', userData.token);
-          localStorage.setItem('userInfo', JSON.stringify(userData.user));
-          onLogin(userData.user);
-          onClose();
-        } else {
-          loginLimiter.recordAttempt(formData.email, false);
-          const error = await response.json();
-          alert(error.message || '登录失败');
-        }
+        // 模拟登录成功
+        const userData = {
+          user: {
+            email: formData.email,
+            organizationName: '演示组织',
+            role: 'user'
+          },
+          token: 'mock_jwt_token_' + Date.now()
+        };
+        
+        loginLimiter.recordAttempt(formData.email, true);
+        localStorage.setItem('userToken', userData.token);
+        localStorage.setItem('userInfo', JSON.stringify(userData.user));
+        onLogin(userData.user);
+        onClose();
       } else {
         // 检查注册频率限制
         if (!registrationLimiter.canRegister(clientIP)) {
@@ -204,35 +191,29 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
           return;
         }
 
-        const response = await fetch('/api/auth/register', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: sanitizeInput(formData.email),
-            password: formData.password,
-            phone: formData.phone,
-            organizationName: sanitizeInput(formData.organizationName),
-            verificationCode: formData.verificationCode
-          })
-        });
+        // 验证短信验证码
+        const codeVerification = await verifyVerificationCode(formData.phone, formData.verificationCode);
         
-        if (response.ok) {
-          registrationLimiter.recordRegistration(clientIP);
-          alert('注册成功！请登录');
-          setIsLoginMode(true);
-          setFormData({
-            email: formData.email,
-            password: '',
-            confirmPassword: '',
-            organizationName: '',
-            phone: '',
-            verificationCode: ''
-          });
-          setErrors({});
-        } else {
-          const error = await response.json();
-          alert(error.message || '注册失败');
+        if (!codeVerification.valid) {
+          alert(codeVerification.message);
+          return;
         }
+
+        // 模拟注册API调用
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        registrationLimiter.recordRegistration(clientIP);
+        alert('注册成功！请登录');
+        setIsLoginMode(true);
+        setFormData({
+          email: formData.email,
+          password: '',
+          confirmPassword: '',
+          organizationName: '',
+          phone: '',
+          verificationCode: ''
+        });
+        setErrors({});
       }
     } catch (error) {
       console.error('认证失败:', error);
