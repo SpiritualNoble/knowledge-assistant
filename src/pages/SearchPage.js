@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { searchKnowledge } from '../services/api';
-import intelligentDocumentService from '../services/intelligentDocumentService';
+import aiServiceSelector from '../services/aiServiceSelector';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -10,6 +10,18 @@ export default function SearchPage({ user }) {
   const [error, setError] = useState(null);
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [searchMetadata, setSearchMetadata] = useState(null);
+  const [serviceInfo, setServiceInfo] = useState(null);
+
+  useEffect(() => {
+    // 获取AI服务信息
+    const updateServiceInfo = () => {
+      setServiceInfo(aiServiceSelector.getServiceInfo());
+    };
+    
+    updateServiceInfo();
+    const interval = setInterval(updateServiceInfo, 2000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -30,8 +42,8 @@ export default function SearchPage({ user }) {
     try {
       console.log('🧠 开始智能搜索:', query);
       
-      // 使用智能文档服务搜索
-      const searchResult = await intelligentDocumentService.search(query, user.id);
+      // 使用AI服务选择器搜索
+      const searchResult = await aiServiceSelector.searchDocuments(query, { userId: user.id });
       
       console.log('📋 搜索结果:', searchResult);
       
@@ -125,6 +137,25 @@ export default function SearchPage({ user }) {
         <h1 className="text-3xl font-bold text-gray-900 mb-2">🔍 智能搜索</h1>
         <p className="text-gray-600">基于LLM-RAG技术的自然语言搜索，理解您的意图并提供精准答案</p>
       </div>
+
+      {/* AI服务状态显示 */}
+      {serviceInfo && (
+        <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${
+                serviceInfo.status === 'ready' ? 'bg-green-500' : 'bg-yellow-500'
+              }`}></div>
+              <span className="text-sm text-gray-700">
+                当前AI服务: <strong>{serviceInfo.serviceName}</strong>
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">
+              {serviceInfo.isLocalAI ? '本地模型' : '浏览器模型'}
+            </span>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSearch} className="mb-8">
         <div className="flex space-x-4">
