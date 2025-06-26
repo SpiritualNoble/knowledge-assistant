@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { uploadDocument, importExternalDocument } from '../services/api';
+import localDocumentService from '../services/localDocumentService';
 
 export default function UploadPage({ user }) {
   const [file, setFile] = useState(null);
@@ -46,6 +47,7 @@ export default function UploadPage({ user }) {
     setUploadSuccess(false);
 
     try {
+      // 首先尝试上传到云端API
       const formData = new FormData();
       formData.append('file', file);
       formData.append('title', title);
@@ -53,33 +55,52 @@ export default function UploadPage({ user }) {
       formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim()).filter(tag => tag)));
 
       const token = localStorage.getItem('userToken');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: formData
-      });
+      
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/upload`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          body: formData
+        });
 
-      if (response.ok) {
-        const result = await response.json();
+        if (response.ok) {
+          const result = await response.json();
+          setUploadSuccess(true);
+          console.log('文档上传到云端成功:', result.document);
+        } else {
+          throw new Error('云端上传失败');
+        }
+      } catch (cloudError) {
+        console.log('云端API不可用，使用本地存储:', cloudError.message);
+        
+        // 云端API不可用，使用本地存储
+        const document = await localDocumentService.saveDocument(
+          file,
+          {
+            title: title,
+            category: category,
+            tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag)
+          },
+          user.id
+        );
+        
         setUploadSuccess(true);
-        setFile(null);
-        setTitle('');
-        setTags('');
-        
-        // 重置文件输入
-        const fileInput = document.getElementById('file-upload');
-        if (fileInput) fileInput.value = '';
-        
-        console.log('文档上传成功:', result.document);
-      } else {
-        const error = await response.json();
-        setUploadError(error.error || '文件上传失败，请稍后再试');
+        console.log('文档保存到本地成功:', document);
       }
+      
+      setFile(null);
+      setTitle('');
+      setTags('');
+      
+      // 重置文件输入
+      const fileInput = document.getElementById('file-upload');
+      if (fileInput) fileInput.value = '';
+      
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploadError('网络错误，请检查连接后重试');
+      setUploadError('文件上传失败：' + error.message);
     } finally {
       setUploading(false);
     }

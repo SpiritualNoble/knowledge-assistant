@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { searchKnowledge } from '../services/api';
+import localDocumentService from '../services/localDocumentService';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -22,42 +23,35 @@ export default function SearchPage({ user }) {
     setSearchPerformed(true);
 
     try {
-      // 在实际部署前，使用模拟数据
-      // 实际部署后，取消注释下面的代码
-      /*
-      const token = localStorage.getItem('userToken');
-      const data = await searchKnowledge(query, token);
-      setResults(data.results || []);
-      */
-      
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // 模拟数据 - 根据用户显示不同结果
-      const mockResults = [
-        {
-          id: '1',
-          content: `针对您的个人知识库搜索结果：这是一个关于"${query}"的详细解答。基于您上传的文档内容，我们为您提供最相关的信息。`,
-          metadata: {
-            source: `personal_knowledge_base.md`,
-            paragraph_index: 1,
-            uploadedBy: user.email
+      // 首先尝试云端搜索API
+      try {
+        const token = localStorage.getItem('userToken');
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/search`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
           },
-          score: 0.92
-        },
-        {
-          id: '2',
-          content: `在您的知识库中，关于"${query}"还有以下相关内容：这些信息来自您上传的文档，确保了内容的准确性和相关性。`,
-          metadata: {
-            source: `my_documents.pdf`,
-            paragraph_index: 3,
-            uploadedBy: user.email
-          },
-          score: 0.85
+          body: JSON.stringify({ query })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setResults(data.results || []);
+          console.log('云端搜索成功，找到', data.results?.length || 0, '个结果');
+          return;
+        } else {
+          throw new Error('云端搜索失败');
         }
-      ];
+      } catch (cloudError) {
+        console.log('云端搜索API不可用，使用本地搜索:', cloudError.message);
+      }
+
+      // 云端API不可用，使用本地搜索
+      const localResults = await localDocumentService.searchDocuments(query, user.id);
+      setResults(localResults);
+      console.log('本地搜索完成，找到', localResults.length, '个结果');
       
-      setResults(mockResults);
     } catch (err) {
       console.error('Search failed:', err);
       setError('搜索失败，请稍后再试');

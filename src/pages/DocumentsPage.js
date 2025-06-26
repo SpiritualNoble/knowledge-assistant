@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentTextIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
+import localDocumentService from '../services/localDocumentService';
 
 const DocumentsPage = ({ user }) => {
   const [documents, setDocuments] = useState([]);
@@ -11,51 +12,46 @@ const DocumentsPage = ({ user }) => {
   }, [user]);
 
   const fetchDocuments = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('userToken');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
       
-      if (response.ok) {
-        const data = await response.json();
-        setDocuments(data.documents || []);
-      } else if (response.status === 401) {
-        // 令牌无效，清除本地存储
-        localStorage.removeItem('userToken');
-        localStorage.removeItem('userInfo');
-        alert('登录已过期，请重新登录');
-      } else {
-        console.error('获取文档失败:', response.statusText);
+      // 首先尝试从云端API获取
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setDocuments(data.documents || []);
+          console.log('从云端获取文档成功');
+          return;
+        } else if (response.status === 401) {
+          localStorage.removeItem('userToken');
+          localStorage.removeItem('userInfo');
+          alert('登录已过期，请重新登录');
+          return;
+        }
+      } catch (cloudError) {
+        console.log('云端API不可用，使用本地存储:', cloudError.message);
       }
+      
+      // 云端API不可用，从本地存储获取
+      const localDocuments = await localDocumentService.getUserDocuments(user.id);
+      setDocuments(localDocuments);
+      console.log('从本地存储获取文档:', localDocuments.length, '个');
+      
     } catch (error) {
       console.error('获取文档失败:', error);
-      // 如果API不可用，显示模拟数据
-      setDocuments([
-        {
-          id: 'demo_1',
-          filename: 'sample.pdf',
-          title: '示例文档',
-          size: 1024000,
-          category: 'technical',
-          tags: ['示例', '测试'],
-          uploadedAt: new Date().toISOString(),
-          contentType: 'application/pdf'
-        },
-        {
-          id: 'demo_2',
-          filename: 'guide.md',
-          title: '使用指南',
-          size: 512000,
-          category: 'general',
-          tags: ['指南', '帮助'],
-          uploadedAt: new Date(Date.now() - 86400000).toISOString(),
-          contentType: 'text/markdown'
-        }
-      ]);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -66,23 +62,33 @@ const DocumentsPage = ({ user }) => {
     
     try {
       const token = localStorage.getItem('userToken');
-      const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/${docId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
       
-      if (response.ok) {
-        setDocuments(documents.filter(doc => doc.id !== docId));
-        alert('文档删除成功');
-      } else {
-        const error = await response.json();
-        alert(error.error || '删除失败，请稍后重试');
+      // 首先尝试从云端删除
+      try {
+        const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/${docId}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (response.ok) {
+          console.log('从云端删除文档成功');
+        } else {
+          throw new Error('云端删除失败');
+        }
+      } catch (cloudError) {
+        console.log('云端API不可用，从本地删除:', cloudError.message);
       }
+      
+      // 从本地存储删除
+      await localDocumentService.deleteDocument(docId);
+      setDocuments(documents.filter(doc => doc.id !== docId));
+      alert('文档删除成功');
+      
     } catch (error) {
       console.error('删除文档失败:', error);
-      alert('网络错误，请检查连接后重试');
+      alert('删除失败：' + error.message);
     }
   };
 
