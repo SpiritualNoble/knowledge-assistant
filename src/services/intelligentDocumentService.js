@@ -22,8 +22,13 @@ class IntelligentDocumentService {
     }
   }
 
-  // 添加文档
-  async addDocument(file, metadata, userId) {
+  // 添加文档 (兼容aiServiceSelector接口)
+  async addDocument(document) {
+    return await simpleDocumentService.addDocumentFromData(document);
+  }
+
+  // 添加文档 (从文件)
+  async addDocumentFromFile(file, metadata, userId) {
     console.log('📄 添加文档:', file.name);
     
     try {
@@ -52,6 +57,12 @@ class IntelligentDocumentService {
       console.error('❌ 添加文档失败:', error);
       throw error;
     }
+  }
+
+  // 智能搜索 (兼容aiServiceSelector接口)
+  async searchDocuments(query, options = {}) {
+    const { userId } = options;
+    return await this.search(query, userId);
   }
 
   // 智能搜索
@@ -103,6 +114,11 @@ class IntelligentDocumentService {
         error: error.message
       };
     }
+  }
+
+  // 获取用户文档 (兼容aiServiceSelector接口)
+  async getDocuments(userId) {
+    return await this.getUserDocuments(userId);
   }
 
   // 获取用户文档

@@ -1,10 +1,38 @@
 // 简单文档服务 - 确保基本功能可用
 class SimpleDocumentService {
   constructor() {
-    this.storageKey = 'simple_documents';
+    this.storageKey = 'knowledge_documents'; // 使用与openaiService相同的存储键
   }
 
-  // 添加文档
+  // 添加文档 (兼容aiServiceSelector接口)
+  async addDocumentFromData(document) {
+    try {
+      const newDoc = {
+        id: Date.now().toString(),
+        userId: document.userId,
+        filename: document.title,
+        title: document.title,
+        content: document.content,
+        category: document.category || 'general',
+        tags: document.tags || [],
+        uploadedAt: new Date().toISOString(),
+        source: document.source || 'manual'
+      };
+
+      // 保存到localStorage
+      const existing = this.getStoredDocuments();
+      existing.push(newDoc);
+      localStorage.setItem(this.storageKey, JSON.stringify(existing));
+
+      console.log('✅ 文档添加成功:', newDoc.title);
+      return { success: true, document: newDoc };
+    } catch (error) {
+      console.error('❌ 添加文档失败:', error);
+      return { success: false, error: error.message };
+    }
+  }
+
+  // 添加文档 (从文件)
   async addDocument(file, metadata, userId) {
     console.log('📄 添加文档:', file.name);
     
@@ -38,10 +66,21 @@ class SimpleDocumentService {
     }
   }
 
+  // 获取用户文档 (兼容aiServiceSelector接口)
+  async getDocuments(userId) {
+    return await this.getUserDocuments(userId);
+  }
+
   // 获取用户文档
   async getUserDocuments(userId) {
     const allDocs = this.getStoredDocuments();
     return allDocs.filter(doc => doc.userId === userId);
+  }
+
+  // 搜索文档 (兼容aiServiceSelector接口)
+  async searchDocuments(query, options = {}) {
+    const { userId } = options;
+    return await this.search(query, userId);
   }
 
   // 搜索文档
