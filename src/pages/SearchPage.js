@@ -33,13 +33,13 @@ export default function SearchPage({ user }) {
       // 模拟API调用延迟
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // 模拟数据 - 根据用户组织显示不同结果
+      // 模拟数据 - 根据用户显示不同结果
       const mockResults = [
         {
           id: '1',
-          content: `针对${user.organizationName}的知识库搜索结果：这是一个关于"${query}"的详细解答。基于您组织的知识库内容，我们为您提供最相关的信息。`,
+          content: `针对您的个人知识库搜索结果：这是一个关于"${query}"的详细解答。基于您上传的文档内容，我们为您提供最相关的信息。`,
           metadata: {
-            source: `${user.organizationName}_knowledge_base.md`,
+            source: `personal_knowledge_base.md`,
             paragraph_index: 1,
             uploadedBy: user.email
           },
@@ -47,9 +47,9 @@ export default function SearchPage({ user }) {
         },
         {
           id: '2',
-          content: `在您的组织知识库中，关于"${query}"还有以下相关内容：这些信息来自您团队上传的文档，确保了内容的准确性和相关性。`,
+          content: `在您的知识库中，关于"${query}"还有以下相关内容：这些信息来自您上传的文档，确保了内容的准确性和相关性。`,
           metadata: {
-            source: `team_documents.pdf`,
+            source: `my_documents.pdf`,
             paragraph_index: 3,
             uploadedBy: user.email
           },
@@ -145,7 +145,7 @@ export default function SearchPage({ user }) {
                 </svg>
                 <h3 className="mt-2 text-sm font-medium text-gray-900">未找到结果</h3>
                 <p className="mt-1 text-sm text-gray-500">
-                  在您的知识库中未找到相关内容，尝试使用不同的关键词或上传更多文档。
+                  在您的个人知识库中未找到相关内容，尝试使用不同的关键词或上传更多文档。
                 </p>
               </div>
             )}
@@ -193,7 +193,7 @@ export default function SearchPage({ user }) {
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• 使用具体的关键词可以获得更精准的结果</li>
                   <li>• 支持自然语言问题，如"如何提高用户留存率？"</li>
-                  <li>• 搜索结果仅来自您组织({user.organizationName})的知识库</li>
+                  <li>• 搜索结果仅来自您的个人知识库</li>
                   <li>• 可以搜索文档内容、标题和标签</li>
                 </ul>
               </div>

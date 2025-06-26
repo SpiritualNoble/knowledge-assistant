@@ -4,26 +4,18 @@ import {
   validators, 
   loginLimiter, 
   registrationLimiter, 
-  smsLimiter, 
   getClientIP,
-  checkPasswordStrength,
-  sanitizeInput 
+  checkPasswordStrength
 } from '../utils/security';
-import { sendSMS, verifyVerificationCode } from '../services/mockSmsService';
 
 const AuthModal = ({ isOpen, onClose, onLogin }) => {
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    confirmPassword: '',
-    organizationName: '',
-    phone: '',
-    verificationCode: ''
+    confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [sendingCode, setSendingCode] = useState(false);
-  const [countdown, setCountdown] = useState(0);
   const [captcha, setCaptcha] = useState('');
   const [captchaInput, setCaptchaInput] = useState('');
   const [passwordStrength, setPasswordStrength] = useState(null);
@@ -45,15 +37,6 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
     }
   }, [isOpen, isLoginMode]);
 
-  // 倒计时效果
-  useEffect(() => {
-    let timer;
-    if (countdown > 0) {
-      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-    }
-    return () => clearTimeout(timer);
-  }, [countdown]);
-
   // 密码强度检查
   useEffect(() => {
     if (!isLoginMode && formData.password) {
@@ -71,24 +54,12 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
     }
 
     if (!isLoginMode) {
-      if (!validators.phone(formData.phone)) {
-        newErrors.phone = '请输入正确的手机号码';
-      }
-
       if (!validators.password(formData.password)) {
         newErrors.password = '密码至少8位，需包含字母和数字';
       }
 
       if (formData.password !== formData.confirmPassword) {
         newErrors.confirmPassword = '两次输入的密码不一致';
-      }
-
-      if (!validators.organizationName(formData.organizationName)) {
-        newErrors.organizationName = '组织名称长度应在2-50字符之间';
-      }
-
-      if (!validators.verificationCode(formData.verificationCode)) {
-        newErrors.verificationCode = '请输入6位数字验证码';
       }
 
       if (captchaInput.toLowerCase() !== captcha.toLowerCase()) {
@@ -98,52 +69,6 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
-  };
-
-  const sendVerificationCode = async () => {
-    // 检查短信发送限制
-    if (!smsLimiter.canSendSMS(formData.phone)) {
-      const remaining = smsLimiter.getDailyRemaining(formData.phone);
-      const waitTime = Math.ceil(smsLimiter.getRemainingTime(formData.phone) / 1000);
-      
-      if (remaining === 0) {
-        alert('今日短信发送次数已达上限，请明天再试');
-      } else {
-        alert(`请等待${waitTime}秒后再发送`);
-      }
-      return;
-    }
-
-    if (!validators.phone(formData.phone)) {
-      setErrors({...errors, phone: '请输入正确的手机号码'});
-      return;
-    }
-
-    if (captchaInput.toLowerCase() !== captcha.toLowerCase()) {
-      setErrors({...errors, captcha: '图形验证码错误'});
-      generateCaptcha();
-      setCaptchaInput('');
-      return;
-    }
-
-    setSendingCode(true);
-    try {
-      const result = await sendSMS(formData.phone, 'register');
-      
-      if (result.success) {
-        smsLimiter.recordSMS(formData.phone);
-        setCountdown(60);
-        alert('验证码已发送，请查收短信');
-        setErrors({...errors, phone: '', captcha: ''});
-      } else {
-        alert(result.message || '发送失败，请稍后重试');
-      }
-    } catch (error) {
-      console.error('发送验证码失败:', error);
-      alert('发送失败，请检查网络连接');
-    } finally {
-      setSendingCode(false);
-    }
   };
 
   const handleSubmit = async (e) => {
@@ -171,9 +96,11 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         // 模拟登录成功
         const userData = {
           user: {
+            id: 'user_' + Date.now(),
             email: formData.email,
-            organizationName: '演示组织',
-            role: 'user'
+            displayName: formData.email.split('@')[0],
+            role: 'user',
+            createdAt: new Date().toISOString()
           },
           token: 'mock_jwt_token_' + Date.now()
         };
@@ -191,14 +118,6 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
           return;
         }
 
-        // 验证短信验证码
-        const codeVerification = await verifyVerificationCode(formData.phone, formData.verificationCode);
-        
-        if (!codeVerification.valid) {
-          alert(codeVerification.message);
-          return;
-        }
-
         // 模拟注册API调用
         await new Promise(resolve => setTimeout(resolve, 1500));
         
@@ -208,12 +127,10 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         setFormData({
           email: formData.email,
           password: '',
-          confirmPassword: '',
-          organizationName: '',
-          phone: '',
-          verificationCode: ''
+          confirmPassword: ''
         });
         setErrors({});
+        setCaptchaInput('');
       }
     } catch (error) {
       console.error('认证失败:', error);
@@ -222,6 +139,183 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
       setLoading(false);
     }
   };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">
+            {isLoginMode ? '登录' : '注册'}
+          </h2>
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <XMarkIcon className="h-6 w-6" />
+          </button>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              邮箱 *
+            </label>
+            <input
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.email ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder="请输入邮箱地址"
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              密码 *
+            </label>
+            <input
+              type="password"
+              required
+              value={formData.password}
+              onChange={(e) => setFormData({...formData, password: e.target.value})}
+              className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                errors.password ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder={isLoginMode ? "请输入密码" : "至少8位，包含字母和数字"}
+            />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+            
+            {/* 密码强度指示器 */}
+            {passwordStrength && (
+              <div className="mt-2">
+                <div className="flex items-center space-x-2">
+                  <div className="flex-1 bg-gray-200 rounded-full h-2">
+                    <div 
+                      className={`h-2 rounded-full transition-all duration-300 ${
+                        passwordStrength.strength === 'weak' ? 'bg-red-500 w-1/3' :
+                        passwordStrength.strength === 'medium' ? 'bg-yellow-500 w-2/3' :
+                        'bg-green-500 w-full'
+                      }`}
+                    />
+                  </div>
+                  <span className={`text-xs font-medium ${
+                    passwordStrength.strength === 'weak' ? 'text-red-500' :
+                    passwordStrength.strength === 'medium' ? 'text-yellow-500' :
+                    'text-green-500'
+                  }`}>
+                    {passwordStrength.strength === 'weak' ? '弱' :
+                     passwordStrength.strength === 'medium' ? '中' : '强'}
+                  </span>
+                </div>
+                {passwordStrength.suggestions.length > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    建议: {passwordStrength.suggestions.join('、')}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {!isLoginMode && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  确认密码 *
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={formData.confirmPassword}
+                  onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                    errors.confirmPassword ? 'border-red-300' : 'border-gray-300'
+                  }`}
+                  placeholder="请再次输入密码"
+                />
+                {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+              </div>
+
+              {/* 图形验证码 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  验证码 *
+                </label>
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    required
+                    value={captchaInput}
+                    onChange={(e) => setCaptchaInput(e.target.value)}
+                    className={`flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                      errors.captcha ? 'border-red-300' : 'border-gray-300'
+                    }`}
+                    placeholder="请输入验证码"
+                  />
+                  <div 
+                    className="w-20 h-10 bg-gray-200 border border-gray-300 rounded-md flex items-center justify-center cursor-pointer font-mono text-lg font-bold select-none hover:bg-gray-300 transition-colors"
+                    onClick={generateCaptcha}
+                    style={{
+                      background: `linear-gradient(45deg, #f0f0f0, #e0e0e0)`,
+                      letterSpacing: '2px'
+                    }}
+                  >
+                    {captcha}
+                  </div>
+                </div>
+                {errors.captcha && <p className="text-red-500 text-xs mt-1">{errors.captcha}</p>}
+                <p className="text-xs text-gray-500 mt-1">点击验证码可刷新</p>
+              </div>
+            </>
+          )}
+          
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {loading ? '处理中...' : (isLoginMode ? '登录' : '注册')}
+          </button>
+        </form>
+        
+        <div className="mt-4 text-center">
+          <button
+            onClick={() => {
+              setIsLoginMode(!isLoginMode);
+              generateCaptcha();
+              setFormData({
+                email: '',
+                password: '',
+                confirmPassword: ''
+              });
+              setCaptchaInput('');
+              setErrors({});
+            }}
+            className="text-blue-600 hover:text-blue-800 transition-colors"
+          >
+            {isLoginMode ? '没有账号？点击注册' : '已有账号？点击登录'}
+          </button>
+        </div>
+
+        {!isLoginMode && (
+          <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+            <h4 className="text-sm font-medium text-blue-800 mb-1">安全提示</h4>
+            <ul className="text-xs text-blue-700 space-y-1">
+              <li>• 请使用真实的邮箱地址进行注册</li>
+              <li>• 密码至少8位，建议包含大小写字母、数字和特殊字符</li>
+              <li>• 每个邮箱只能注册一个账号</li>
+              <li>• 注册即表示同意我们的服务条款和隐私政策</li>
+            </ul>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default AuthModal;
 
   if (!isOpen) return null;
 

@@ -114,7 +114,7 @@ export default function UploadPage({ user }) {
                   <div className="ml-3">
                     <h3 className="text-sm font-medium text-yellow-800">提示</h3>
                     <div className="mt-2 text-sm text-yellow-700">
-                      <p>请先登录后再上传文档，这样可以确保文档归属到您的组织知识库中。</p>
+                      <p>请先登录后再上传文档，这样可以确保文档归属到您的个人知识库中。</p>
                     </div>
                   </div>
                 </div>
@@ -288,7 +288,7 @@ export default function UploadPage({ user }) {
                     导入外部文档
                   </h3>
                   <div className="mt-2 max-w-xl text-sm text-gray-500">
-                    <p>从飞书、语雀、钉钉等平台导入文档到您的知识库</p>
+                    <p>从飞书、语雀、钉钉等平台导入文档到您的个人知识库</p>
                   </div>
                   
                   {importSuccess && (
@@ -404,7 +404,7 @@ export default function UploadPage({ user }) {
                 <h4 className="font-medium text-blue-900 mb-2">上传提示</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
                   <li>• 上传的文档将自动进行内容提取和向量化处理</li>
-                  <li>• 文档仅在您的组织({user.organizationName})内可见和搜索</li>
+                  <li>• 文档仅在您的个人账户内可见和搜索</li>
                   <li>• 支持批量上传，建议为文档添加合适的标签便于管理</li>
                   <li>• 处理完成后可在"文档管理"页面查看和管理</li>
                 </ul>

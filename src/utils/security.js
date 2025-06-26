@@ -142,23 +142,10 @@ export const validators = {
     return emailRegex.test(email);
   },
   
-  phone: (phone) => {
-    const phoneRegex = /^1[3-9]\d{9}$/;
-    return phoneRegex.test(phone);
-  },
-  
   password: (password) => {
     // 至少8位，包含字母、数字，可选特殊字符
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{8,}$/;
     return passwordRegex.test(password);
-  },
-  
-  organizationName: (name) => {
-    return name && name.trim().length >= 2 && name.trim().length <= 50;
-  },
-  
-  verificationCode: (code) => {
-    return /^\d{6}$/.test(code);
   }
 };
 
