@@ -45,14 +45,15 @@ class OpenAIService {
   // 添加文档
   async addDocument(document) {
     try {
-      // 确保有用户ID，如果没有则使用默认值
-      const userId = document.userId || 'anonymous_user';
+      if (!document.userId) {
+        throw new Error('用户ID不能为空');
+      }
       
       const newDoc = {
         id: Date.now().toString(),
         title: document.title,
         content: document.content,
-        userId: userId,
+        userId: document.userId,
         createdAt: new Date().toISOString(),
         source: document.source || 'manual',
         category: document.category || 'general',
@@ -74,9 +75,12 @@ class OpenAIService {
 
   // 获取用户文档
   async getDocuments(userId) {
-    const targetUserId = userId || 'anonymous_user';
-    const userDocs = this.documents.filter(doc => doc.userId === targetUserId);
-    console.log(`📚 获取用户 ${targetUserId} 的文档:`, userDocs.length, '个');
+    if (!userId) {
+      console.warn('⚠️ 用户ID为空，返回空数组');
+      return [];
+    }
+    const userDocs = this.documents.filter(doc => doc.userId === userId);
+    console.log(`📚 获取用户 ${userId} 的文档:`, userDocs.length, '个');
     return userDocs;
   }
 

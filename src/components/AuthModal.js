@@ -93,10 +93,11 @@ const AuthModal = ({ isOpen, onClose, onLogin }) => {
         // 模拟登录API调用
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-        // 模拟登录成功
+        // 模拟登录成功 - 使用邮箱生成固定的用户ID
+        const userId = 'user_' + btoa(formData.email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 10);
         const userData = {
           user: {
-            id: 'user_' + Date.now(),
+            id: userId,  // 使用固定的用户ID
             email: formData.email,
             displayName: formData.email.split('@')[0],
             role: 'user',

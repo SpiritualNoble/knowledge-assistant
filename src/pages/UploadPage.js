@@ -115,7 +115,7 @@ export default function UploadPage({ user }) {
         const result = await aiServiceSelector.addDocument({
           title: title || file.name,
           content: fileContent,
-          userId: user?.id || 'anonymous_user',
+          userId: user.id,  // 必须有用户ID
           category: category,
           tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
           source: 'file_upload'
