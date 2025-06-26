@@ -77,17 +77,42 @@ export default function UploadPage({ user }) {
         
         // 云端API不可用，使用智能文档服务
         console.log('🧠 使用智能文档服务处理文档...');
-        const document = await aiServiceSelector.addDocument({
-          title: title,
-          content: await file.text(), // 读取文件内容
+        
+        // 读取文件内容
+        let fileContent = '';
+        try {
+          if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+            fileContent = await file.text();
+          } else if (file.type === 'application/json' || file.name.endsWith('.json')) {
+            fileContent = await file.text();
+          } else {
+            // 对于其他类型的文件，尝试读取为文本
+            fileContent = await file.text();
+          }
+        } catch (readError) {
+          console.error('文件读取失败:', readError);
+          fileContent = `文件名: ${file.name}\n文件大小: ${file.size} bytes\n文件类型: ${file.type}`;
+        }
+
+        console.log('📄 文件内容预览:', fileContent.substring(0, 200));
+        
+        const result = await aiServiceSelector.addDocument({
+          title: title || file.name,
+          content: fileContent,
           userId: user.id,
           category: category,
           tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
           source: 'file_upload'
         });
         
-        setUploadSuccess(true);
-        console.log('文档保存到本地成功:', document);
+        console.log('📋 添加文档结果:', result);
+        
+        if (result && result.success) {
+          setUploadSuccess(true);
+          console.log('✅ 文档保存成功:', result.document);
+        } else {
+          throw new Error(result?.error || '文档保存失败');
+        }
       }
       
       setFile(null);

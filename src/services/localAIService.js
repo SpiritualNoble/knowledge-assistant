@@ -28,13 +28,14 @@ class LocalAIService {
   }
 
   // 添加文档到本地AI服务
-  async addDocument(docId, title, content, userId) {
+  async addDocument(document) {
     if (!this.isAvailable) {
       throw new Error('本地AI服务不可用');
     }
 
     try {
-      console.log('📄 向本地AI服务添加文档:', title);
+      const docId = document.id || Date.now().toString();
+      console.log('📄 向本地AI服务添加文档:', document.title);
       
       const response = await fetch(`${this.baseURL}/add_document`, {
         method: 'POST',
@@ -43,9 +44,9 @@ class LocalAIService {
         },
         body: JSON.stringify({
           doc_id: docId,
-          title,
-          content,
-          user_id: userId
+          title: document.title,
+          content: document.content,
+          user_id: document.userId
         })
       });
 
@@ -55,11 +56,22 @@ class LocalAIService {
 
       const result = await response.json();
       console.log('✅ 文档添加到本地AI服务成功');
-      return result;
+      
+      return { 
+        success: true, 
+        document: {
+          id: docId,
+          title: document.title,
+          content: document.content,
+          userId: document.userId,
+          createdAt: new Date().toISOString(),
+          source: document.source || 'local_ai'
+        }
+      };
 
     } catch (error) {
       console.error('❌ 添加文档到本地AI服务失败:', error);
-      throw error;
+      return { success: false, error: error.message };
     }
   }
 
@@ -111,6 +123,23 @@ class LocalAIService {
     }
   }
 
+  // 搜索文档 - 与其他服务保持接口一致
+  async searchDocuments(query, options = {}) {
+    const { userId, topK = 5 } = options;
+    const searchResult = await this.search(query, userId, topK);
+    
+    return {
+      results: searchResult.results,
+      intelligentAnswer: `基于本地Qwen3-Embedding-8B模型的搜索结果，找到 ${searchResult.total} 个相关文档。`,
+      total: searchResult.total,
+      searchType: searchResult.searchType,
+      metadata: {
+        model: 'Qwen3-Embedding-8B',
+        service: 'local_ai'
+      }
+    };
+  }
+
   // 获取用户文档列表
   async getUserDocuments(userId) {
     if (!this.isAvailable) {
@@ -130,6 +159,35 @@ class LocalAIService {
     } catch (error) {
       console.error('❌ 获取用户文档失败:', error);
       return [];
+    }
+  }
+
+  // 获取文档 - 与其他服务保持接口一致
+  async getDocuments(userId) {
+    return await this.getUserDocuments(userId);
+  }
+
+  // 删除文档
+  async deleteDocument(docId) {
+    if (!this.isAvailable) {
+      return { success: false, error: '本地AI服务不可用' };
+    }
+
+    try {
+      const response = await fetch(`${this.baseURL}/documents/${docId}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+
+      console.log('✅ 文档删除成功:', docId);
+      return { success: true };
+
+    } catch (error) {
+      console.error('❌ 删除文档失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
