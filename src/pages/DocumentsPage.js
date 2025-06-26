@@ -32,7 +32,7 @@ const DocumentsPage = ({ user }) => {
   };
 
   const deleteDocument = async (docId) => {
-    if (!confirm('确定要删除这个文档吗？')) return;
+    if (!window.confirm('确定要删除这个文档吗？')) return;
     
     try {
       const token = localStorage.getItem('userToken');
