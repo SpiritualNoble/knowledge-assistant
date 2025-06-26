@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { searchKnowledge } from '../services/api';
-import localDocumentService from '../services/localDocumentService';
+import enhancedDocumentService from '../services/enhancedDocumentService';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -47,10 +47,14 @@ export default function SearchPage({ user }) {
         console.log('云端搜索API不可用，使用本地搜索:', cloudError.message);
       }
 
-      // 云端API不可用，使用本地搜索
-      const localResults = await localDocumentService.searchDocuments(query, user.id);
+      // 云端搜索API不可用，使用增强的本地搜索
+      const localResults = await enhancedDocumentService.searchDocuments(query, user.id, {
+        useSemanticSearch: true,
+        useKeywordSearch: true,
+        maxResults: 10
+      });
       setResults(localResults);
-      console.log('本地搜索完成，找到', localResults.length, '个结果');
+      console.log('增强本地搜索完成，找到', localResults.length, '个结果');
       
     } catch (err) {
       console.error('Search failed:', err);

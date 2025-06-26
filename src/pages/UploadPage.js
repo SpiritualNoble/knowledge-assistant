@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { uploadDocument, importExternalDocument } from '../services/api';
-import localDocumentService from '../services/localDocumentService';
+import enhancedDocumentService from '../services/enhancedDocumentService';
 
 export default function UploadPage({ user }) {
   const [file, setFile] = useState(null);
@@ -75,8 +75,8 @@ export default function UploadPage({ user }) {
       } catch (cloudError) {
         console.log('云端API不可用，使用本地存储:', cloudError.message);
         
-        // 云端API不可用，使用本地存储
-        const document = await localDocumentService.saveDocument(
+        // 云端API不可用，使用增强的本地存储
+        const document = await enhancedDocumentService.saveDocument(
           file,
           {
             title: title,
