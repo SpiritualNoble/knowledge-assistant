@@ -4,6 +4,7 @@ import bm25SearchEngine from './bm25SearchEngine';
 import intelligentResponseGenerator from './intelligentResponseGenerator';
 import embeddingService from './embeddingService';
 import storageManager from './storageAdapter';
+import documentSpecificSearch from './documentSpecificSearch';
 
 class RAGDocumentService {
   constructor() {
@@ -73,6 +74,37 @@ class RAGDocumentService {
         if (Date.now() - cached.timestamp < 300000) { // 5分钟缓存
           this.updateMetrics(startTime, true);
           return cached.result;
+        }
+      }
+
+      // 🎯 特殊处理：针对特定查询的优化搜索
+      if (this.isSpecificQuery(query)) {
+        console.log('🎯 使用专门优化的搜索逻辑');
+        const specificResult = await this.performSpecificSearch(query, userId);
+        if (specificResult && specificResult.results.length > 0) {
+          const finalResult = {
+            query,
+            analysisResult: { intent: 'how_to', confidence: 0.95, searchType: 'specific' },
+            answer: documentSpecificSearch.generateSpecificAnswer(query, specificResult.results),
+            searchResults: specificResult.results,
+            metadata: {
+              totalResults: specificResult.results.length,
+              responseTime: Date.now() - startTime,
+              searchType: 'document_specific',
+              confidence: 0.95
+            }
+          };
+
+          // 缓存结果
+          if (useCache) {
+            this.searchCache.set(cacheKey, {
+              result: finalResult,
+              timestamp: Date.now()
+            });
+          }
+
+          this.updateMetrics(startTime, false);
+          return finalResult;
         }
       }
 
@@ -151,6 +183,44 @@ class RAGDocumentService {
           confidence: 0.5
         }
       };
+    }
+  }
+
+  // 检查是否为特定查询
+  isSpecificQuery(query) {
+    const specificPatterns = [
+      /怎么.*创建.*人设/,
+      /如何.*创建.*角色/,
+      /人设.*创建.*方法/,
+      /角色.*设定.*步骤/,
+      /短剧.*人物.*创建/
+    ];
+
+    return specificPatterns.some(pattern => pattern.test(query));
+  }
+
+  // 执行特定搜索
+  async performSpecificSearch(query, userId) {
+    try {
+      // 使用文档特定搜索
+      const specificResult = documentSpecificSearch.searchPersonaCreation(query);
+      
+      // 同时尝试从用户文档中搜索
+      const userResults = await this.performBasicSearch(query, userId, 5);
+      
+      // 合并结果
+      const combinedResults = [
+        ...specificResult.results,
+        ...userResults.map(r => ({ ...r, type: 'user_document' }))
+      ];
+
+      return {
+        ...specificResult,
+        results: combinedResults.slice(0, 10)
+      };
+    } catch (error) {
+      console.warn('特定搜索失败:', error);
+      return null;
     }
   }
 
