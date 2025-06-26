@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { DocumentTextIcon, TrashIcon, EyeIcon } from '@heroicons/react/24/outline';
-import intelligentDocumentService from '../services/intelligentDocumentService';
+import aiServiceSelector from '../services/aiServiceSelector';
 
 const DocumentsPage = ({ user }) => {
   const [documents, setDocuments] = useState([]);
@@ -45,7 +45,7 @@ const DocumentsPage = ({ user }) => {
       }
       
       // 云端API不可用，从智能文档服务获取
-      const localDocuments = await intelligentDocumentService.getUserDocuments(user.id);
+      const localDocuments = await aiServiceSelector.getDocuments(user.id);
       setDocuments(localDocuments);
       console.log('从智能文档服务获取文档:', localDocuments.length, '个');
       
@@ -82,7 +82,7 @@ const DocumentsPage = ({ user }) => {
       }
       
       // 从智能文档服务删除
-      await intelligentDocumentService.deleteDocument(docId, user.id);
+      await aiServiceSelector.deleteDocument(docId);
       setDocuments(documents.filter(doc => doc.id !== docId));
       console.log('从智能文档服务删除文档成功');
       

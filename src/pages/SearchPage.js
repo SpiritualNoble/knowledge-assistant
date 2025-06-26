@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { searchKnowledge } from '../services/api';
 import aiServiceSelector from '../services/aiServiceSelector';
+import ApiKeyModal from '../components/ApiKeyModal';
+import openaiService from '../services/openaiService';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -11,17 +13,26 @@ export default function SearchPage({ user }) {
   const [searchPerformed, setSearchPerformed] = useState(false);
   const [searchMetadata, setSearchMetadata] = useState(null);
   const [serviceInfo, setServiceInfo] = useState(null);
+  const [showApiKeyModal, setShowApiKeyModal] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(false);
 
   useEffect(() => {
     // 获取AI服务信息
     const updateServiceInfo = () => {
       setServiceInfo(aiServiceSelector.getServiceInfo());
+      setHasApiKey(openaiService.hasApiKey());
     };
     
     updateServiceInfo();
     const interval = setInterval(updateServiceInfo, 2000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleApiKeySave = (apiKey) => {
+    openaiService.setApiKey(apiKey);
+    setHasApiKey(true);
+    console.log('✅ OpenAI API密钥已设置');
+  };
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -150,10 +161,25 @@ export default function SearchPage({ user }) {
                 当前AI服务: <strong>{serviceInfo.serviceName}</strong>
               </span>
             </div>
-            <span className="text-xs text-gray-500">
-              {serviceInfo.isLocalAI ? '本地模型' : '浏览器模型'}
-            </span>
+            <div className="flex items-center space-x-2">
+              {serviceInfo.type === 'cloud_ai' && !hasApiKey && (
+                <button
+                  onClick={() => setShowApiKeyModal(true)}
+                  className="text-xs bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700"
+                >
+                  设置API密钥
+                </button>
+              )}
+              <span className="text-xs text-gray-500">
+                {serviceInfo.isLocalAI ? '本地模型' : serviceInfo.type === 'cloud_ai' ? '云端AI' : '浏览器模型'}
+              </span>
+            </div>
           </div>
+          {serviceInfo.type === 'cloud_ai' && !hasApiKey && (
+            <div className="mt-2 text-xs text-orange-600">
+              ⚠️ 需要设置OpenAI API密钥才能使用智能AI功能
+            </div>
+          )}
         </div>
       )}
 
@@ -307,6 +333,13 @@ export default function SearchPage({ user }) {
           </div>
         </div>
       )}
+
+      {/* API密钥设置模态框 */}
+      <ApiKeyModal
+        isOpen={showApiKeyModal}
+        onClose={() => setShowApiKeyModal(false)}
+        onSave={handleApiKeySave}
+      />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { uploadDocument, importExternalDocument } from '../services/api';
-import intelligentDocumentService from '../services/intelligentDocumentService';
+import aiServiceSelector from '../services/aiServiceSelector';
 
 export default function UploadPage({ user }) {
   const [file, setFile] = useState(null);
@@ -77,15 +77,14 @@ export default function UploadPage({ user }) {
         
         // 云端API不可用，使用智能文档服务
         console.log('🧠 使用智能文档服务处理文档...');
-        const document = await intelligentDocumentService.addDocument(
-          file,
-          {
-            title: title,
-            category: category,
-            tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-          },
-          user.id
-        );
+        const document = await aiServiceSelector.addDocument({
+          title: title,
+          content: await file.text(), // 读取文件内容
+          userId: user.id,
+          category: category,
+          tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+          source: 'file_upload'
+        });
         
         setUploadSuccess(true);
         console.log('文档保存到本地成功:', document);

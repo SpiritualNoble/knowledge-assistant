@@ -5,6 +5,7 @@
 
 import localAIService from './localAIService';
 import intelligentDocumentService from './intelligentDocumentService';
+import openaiService from './openaiService';
 
 class AIServiceSelector {
   constructor() {
@@ -14,6 +15,14 @@ class AIServiceSelector {
   }
 
   async initializeService() {
+    // 在生产环境中优先使用OpenAI
+    if (process.env.NODE_ENV === 'production') {
+      console.log('🌐 生产环境：使用OpenAI GPT-3.5 Turbo');
+      this.currentService = openaiService;
+      this.isLocalAIAvailable = false;
+      return;
+    }
+
     // 检查是否启用本地AI服务
     const enableLocalAI = process.env.REACT_APP_ENABLE_LOCAL_AI === 'true';
     const localAIUrl = process.env.REACT_APP_LOCAL_AI_URL || 'http://localhost:5001';
@@ -33,14 +42,14 @@ class AIServiceSelector {
           return;
         }
       } catch (error) {
-        console.warn('⚠️ 本地AI服务不可用，切换到浏览器AI模式');
+        console.warn('⚠️ 本地AI服务不可用，切换到OpenAI模式');
       }
     }
 
-    // 回退到浏览器内AI服务
+    // 回退到OpenAI服务
+    console.log('🤖 使用OpenAI GPT-3.5 Turbo');
+    this.currentService = openaiService;
     this.isLocalAIAvailable = false;
-    this.currentService = intelligentDocumentService;
-    console.log('🌐 使用浏览器内AI模型');
   }
 
   async searchDocuments(query, options = {}) {
@@ -53,10 +62,17 @@ class AIServiceSelector {
     } catch (error) {
       console.error('AI搜索失败:', error);
       
-      // 如果当前是本地AI服务失败，尝试切换到浏览器AI
+      // 如果当前是本地AI服务失败，尝试切换到OpenAI
       if (this.isLocalAIAvailable && this.currentService === localAIService) {
-        console.log('🔄 本地AI服务失败，切换到浏览器AI模式');
+        console.log('🔄 本地AI服务失败，切换到OpenAI模式');
         this.isLocalAIAvailable = false;
+        this.currentService = openaiService;
+        return await this.currentService.searchDocuments(query, options);
+      }
+      
+      // 如果OpenAI失败，最后切换到简单搜索
+      if (this.currentService === openaiService) {
+        console.log('🔄 OpenAI服务失败，切换到简单搜索模式');
         this.currentService = intelligentDocumentService;
         return await this.currentService.searchDocuments(query, options);
       }
@@ -90,10 +106,20 @@ class AIServiceSelector {
   }
 
   getServiceInfo() {
+    if (this.currentService === openaiService) {
+      return {
+        isLocalAI: false,
+        serviceName: 'OpenAI GPT-3.5 Turbo',
+        status: this.currentService ? 'ready' : 'initializing',
+        type: 'cloud_ai'
+      };
+    }
+    
     return {
       isLocalAI: this.isLocalAIAvailable,
       serviceName: this.isLocalAIAvailable ? 'Qwen3-Embedding-8B (本地)' : 'Browser AI (浏览器)',
-      status: this.currentService ? 'ready' : 'initializing'
+      status: this.currentService ? 'ready' : 'initializing',
+      type: this.isLocalAIAvailable ? 'local_ai' : 'browser_ai'
     };
   }
 }
