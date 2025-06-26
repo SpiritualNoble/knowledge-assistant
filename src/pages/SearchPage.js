@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { searchKnowledge } from '../services/api';
-import intelligentDocumentProcessor from '../services/intelligentDocumentProcessor';
+import localIntelligentSearch from '../services/localIntelligentSearch';
 
 export default function SearchPage({ user }) {
   const [query, setQuery] = useState('');
@@ -28,53 +28,39 @@ export default function SearchPage({ user }) {
     setSearchMetadata(null);
 
     try {
-      console.log('🧠 开始智能搜索:', query);
+      console.log('🧠 开始本地智能搜索:', query);
       
-      // 使用真正的智能搜索
-      const searchResult = await intelligentDocumentProcessor.intelligentSearch(query, user.id);
+      // 使用本地智能搜索
+      const searchResult = await localIntelligentSearch.search(query, user.id);
       
-      if (searchResult.results.length === 0) {
-        setIntelligentAnswer('在您的文档中没有找到相关信息。请确保已上传相关文档。');
-        setResults([]);
-      } else {
-        // 生成智能回答
-        const bestResult = searchResult.results[0];
-        let answer = '';
-        
-        if (bestResult.type === 'qa_pair') {
-          answer = bestResult.answer;
-        } else if (bestResult.type === 'knowledge_point') {
-          answer = bestResult.content;
-        } else {
-          answer = `根据文档内容：${bestResult.content}`;
+      console.log('🔍 搜索结果:', searchResult);
+      
+      // 设置智能回答
+      setIntelligentAnswer(searchResult.answer);
+      
+      // 转换结果格式
+      const formattedResults = searchResult.results.map((result, index) => ({
+        id: `result_${Date.now()}_${index}`,
+        content: result.content || result.answer || '',
+        score: result.score,
+        metadata: {
+          source: result.docTitle || '文档',
+          title: result.section || '相关内容',
+          category: result.type || 'general',
+          tags: [],
+          uploadedAt: new Date().toISOString()
         }
-        
-        setIntelligentAnswer(answer);
-        
-        // 转换结果格式
-        const formattedResults = searchResult.results.map(result => ({
-          id: `result_${Date.now()}_${Math.random()}`,
-          content: result.content || result.answer || '',
-          score: result.score,
-          metadata: {
-            source: result.source || '文档',
-            title: result.question || result.source || '相关内容',
-            category: result.type || 'general',
-            tags: [],
-            uploadedAt: new Date().toISOString()
-          }
-        }));
-        
-        setResults(formattedResults);
-        setSearchMetadata({
-          totalResults: searchResult.totalFound,
-          responseTime: Date.now() - Date.now(),
-          searchType: 'intelligent',
-          confidence: bestResult.score
-        });
-      }
+      }));
       
-      console.log('✅ 智能搜索完成，找到', searchResult.results.length, '个结果');
+      setResults(formattedResults);
+      setSearchMetadata({
+        totalResults: searchResult.totalFound || 0,
+        responseTime: 100,
+        searchType: 'local_intelligent',
+        confidence: searchResult.confidence || 0
+      });
+      
+      console.log('✅ 本地智能搜索完成，找到', formattedResults.length, '个结果');
       
     } catch (err) {
       console.error('❌ 智能搜索失败:', err);
