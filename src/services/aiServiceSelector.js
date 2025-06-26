@@ -11,6 +11,7 @@ class AIServiceSelector {
   constructor() {
     this.isLocalAIAvailable = false;
     this.currentService = null;
+    this.initialized = false;
     this.initializeService();
   }
 
@@ -20,6 +21,7 @@ class AIServiceSelector {
       console.log('🌐 生产环境：使用OpenAI GPT-3.5 Turbo');
       this.currentService = openaiService;
       this.isLocalAIAvailable = false;
+      this.initialized = true;
       return;
     }
 
@@ -50,11 +52,19 @@ class AIServiceSelector {
     console.log('🤖 使用OpenAI GPT-3.5 Turbo');
     this.currentService = openaiService;
     this.isLocalAIAvailable = false;
+    this.initialized = true;
+  }
+
+  async ensureInitialized() {
+    if (!this.initialized) {
+      await this.initializeService();
+    }
   }
 
   async searchDocuments(query, options = {}) {
+    await this.ensureInitialized();
     if (!this.currentService) {
-      await this.initializeService();
+      throw new Error('AI服务未初始化');
     }
 
     try {
@@ -82,26 +92,26 @@ class AIServiceSelector {
   }
 
   async addDocument(document) {
+    await this.ensureInitialized();
     if (!this.currentService) {
-      await this.initializeService();
+      throw new Error('AI服务未初始化');
     }
-
     return await this.currentService.addDocument(document);
   }
 
-  async getDocuments() {
+  async getDocuments(userId) {
+    await this.ensureInitialized();
     if (!this.currentService) {
-      await this.initializeService();
+      throw new Error('AI服务未初始化');
     }
-
-    return await this.currentService.getDocuments();
+    return await this.currentService.getDocuments(userId);
   }
 
   async deleteDocument(id) {
+    await this.ensureInitialized();
     if (!this.currentService) {
-      await this.initializeService();
+      throw new Error('AI服务未初始化');
     }
-
     return await this.currentService.deleteDocument(id);
   }
 
