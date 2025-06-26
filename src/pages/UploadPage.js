@@ -46,16 +46,40 @@ export default function UploadPage({ user }) {
     setUploadSuccess(false);
 
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setUploadSuccess(true);
-      setFile(null);
-      setTitle('');
-      setTags('');
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', title);
+      formData.append('category', category);
+      formData.append('tags', JSON.stringify(tags.split(',').map(tag => tag.trim()).filter(tag => tag)));
+
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setUploadSuccess(true);
+        setFile(null);
+        setTitle('');
+        setTags('');
+        
+        // 重置文件输入
+        const fileInput = document.getElementById('file-upload');
+        if (fileInput) fileInput.value = '';
+        
+        console.log('文档上传成功:', result.document);
+      } else {
+        const error = await response.json();
+        setUploadError(error.error || '文件上传失败，请稍后再试');
+      }
     } catch (error) {
       console.error('Upload failed:', error);
-      setUploadError('文件上传失败，请稍后再试');
+      setUploadError('网络错误，请检查连接后重试');
     } finally {
       setUploading(false);
     }
@@ -79,15 +103,33 @@ export default function UploadPage({ user }) {
     setImportSuccess(false);
 
     try {
-      // 模拟API调用延迟
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      setImportSuccess(true);
-      setExternalDocId('');
-      setExternalToken('');
+      const token = localStorage.getItem('userToken');
+      const response = await fetch(`${process.env.REACT_APP_API_URL || ''}/api/documents/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          source: externalSource,
+          docId: externalDocId,
+          token: externalToken
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setImportSuccess(true);
+        setExternalDocId('');
+        setExternalToken('');
+        console.log('文档导入成功:', result.document);
+      } else {
+        const error = await response.json();
+        setImportError(error.error || '文档导入失败，请检查ID和权限');
+      }
     } catch (error) {
       console.error('Import failed:', error);
-      setImportError('文档导入失败，请检查ID和权限');
+      setImportError('网络错误，请检查连接后重试');
     } finally {
       setImporting(false);
     }
