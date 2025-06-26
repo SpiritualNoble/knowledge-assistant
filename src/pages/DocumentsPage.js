@@ -45,7 +45,7 @@ const DocumentsPage = ({ user }) => {
       }
       
       // 云端API不可用，从智能文档服务获取
-      const localDocuments = await aiServiceSelector.getDocuments(user.id);
+      const localDocuments = await aiServiceSelector.getDocuments(user?.id || 'anonymous_user');
       setDocuments(localDocuments);
       console.log('从智能文档服务获取文档:', localDocuments.length, '个');
       

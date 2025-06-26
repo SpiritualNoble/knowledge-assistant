@@ -54,7 +54,7 @@ export default function SearchPage({ user }) {
       console.log('🧠 开始智能搜索:', query);
       
       // 使用AI服务选择器搜索
-      const searchResult = await aiServiceSelector.searchDocuments(query, { userId: user.id });
+      const searchResult = await aiServiceSelector.searchDocuments(query, { userId: user?.id || 'anonymous_user' });
       
       console.log('📋 搜索结果:', searchResult);
       

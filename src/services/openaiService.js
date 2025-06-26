@@ -45,19 +45,26 @@ class OpenAIService {
   // 添加文档
   async addDocument(document) {
     try {
+      // 确保有用户ID，如果没有则使用默认值
+      const userId = document.userId || 'anonymous_user';
+      
       const newDoc = {
         id: Date.now().toString(),
         title: document.title,
         content: document.content,
-        userId: document.userId,
+        userId: userId,
         createdAt: new Date().toISOString(),
-        source: document.source || 'manual'
+        source: document.source || 'manual',
+        category: document.category || 'general',
+        tags: document.tags || []
       };
 
       this.documents.push(newDoc);
       this.saveDocuments();
 
       console.log('✅ 文档添加成功:', newDoc.title);
+      console.log('📊 当前文档总数:', this.documents.length);
+      
       return { success: true, document: newDoc };
     } catch (error) {
       console.error('❌ 添加文档失败:', error);
@@ -67,7 +74,10 @@ class OpenAIService {
 
   // 获取用户文档
   async getDocuments(userId) {
-    return this.documents.filter(doc => doc.userId === userId);
+    const targetUserId = userId || 'anonymous_user';
+    const userDocs = this.documents.filter(doc => doc.userId === targetUserId);
+    console.log(`📚 获取用户 ${targetUserId} 的文档:`, userDocs.length, '个');
+    return userDocs;
   }
 
   // 删除文档

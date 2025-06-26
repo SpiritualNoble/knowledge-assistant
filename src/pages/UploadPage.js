@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { uploadDocument, importExternalDocument } from '../services/api';
 import aiServiceSelector from '../services/aiServiceSelector';
+import DebugService from '../services/debugService';
 
 export default function UploadPage({ user }) {
   const [file, setFile] = useState(null);
@@ -10,6 +11,7 @@ export default function UploadPage({ user }) {
   const [uploading, setUploading] = useState(false);
   const [uploadSuccess, setUploadSuccess] = useState(false);
   const [uploadError, setUploadError] = useState(null);
+  const [debugMode, setDebugMode] = useState(false);
   
   // 外部导入相关状态
   const [externalSource, setExternalSource] = useState('feishu');
@@ -45,6 +47,16 @@ export default function UploadPage({ user }) {
     setUploading(true);
     setUploadError(null);
     setUploadSuccess(false);
+
+    // 调试信息
+    DebugService.log('开始上传文档', {
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+      title: title,
+      userId: user?.id,
+      environment: process.env.NODE_ENV
+    });
 
     try {
       // 首先尝试上传到云端API
@@ -95,21 +107,27 @@ export default function UploadPage({ user }) {
         }
 
         console.log('📄 文件内容预览:', fileContent.substring(0, 200));
+        DebugService.log('文件内容读取成功', {
+          contentLength: fileContent.length,
+          preview: fileContent.substring(0, 100)
+        });
         
         const result = await aiServiceSelector.addDocument({
           title: title || file.name,
           content: fileContent,
-          userId: user.id,
+          userId: user?.id || 'anonymous_user',
           category: category,
           tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
           source: 'file_upload'
         });
         
         console.log('📋 添加文档结果:', result);
+        DebugService.log('文档添加结果', result);
         
         if (result && result.success) {
           setUploadSuccess(true);
           console.log('✅ 文档保存成功:', result.document);
+          DebugService.log('文档保存成功', result.document);
         } else {
           throw new Error(result?.error || '文档保存失败');
         }
@@ -125,6 +143,10 @@ export default function UploadPage({ user }) {
       
     } catch (error) {
       console.error('Upload failed:', error);
+      DebugService.log('上传失败', {
+        error: error.message,
+        stack: error.stack
+      });
       setUploadError('文件上传失败：' + error.message);
     } finally {
       setUploading(false);
@@ -498,6 +520,55 @@ export default function UploadPage({ user }) {
                 </ul>
               </div>
             )}
+
+            {/* 调试面板 */}
+            <div className="mt-8 bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h4 className="font-medium text-gray-900">调试信息</h4>
+                <button
+                  onClick={() => setDebugMode(!debugMode)}
+                  className="text-sm text-blue-600 hover:text-blue-800"
+                >
+                  {debugMode ? '隐藏' : '显示'}调试面板
+                </button>
+              </div>
+              
+              {debugMode && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button
+                      onClick={() => DebugService.checkEnvironment()}
+                      className="px-3 py-2 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
+                    >
+                      检查环境
+                    </button>
+                    <button
+                      onClick={() => DebugService.testDocumentSave()}
+                      className="px-3 py-2 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+                    >
+                      测试文档保存
+                    </button>
+                    <button
+                      onClick={() => {
+                        const logs = DebugService.getLogs();
+                        console.log('调试日志:', logs);
+                        alert(`共有 ${logs.length} 条调试日志，请查看控制台`);
+                      }}
+                      className="px-3 py-2 bg-purple-600 text-white text-sm rounded hover:bg-purple-700"
+                    >
+                      查看日志
+                    </button>
+                  </div>
+                  
+                  <div className="text-xs text-gray-600 bg-white p-3 rounded border">
+                    <div>环境: {process.env.NODE_ENV}</div>
+                    <div>用户ID: {user?.id || '未登录'}</div>
+                    <div>localStorage可用: {DebugService.testLocalStorage() ? '是' : '否'}</div>
+                    <div>已保存文档数: {DebugService.getDocumentCount()}</div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </main>
