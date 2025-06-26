@@ -5,6 +5,7 @@ import intelligentResponseGenerator from './intelligentResponseGenerator';
 import embeddingService from './embeddingService';
 import storageManager from './storageAdapter';
 import documentSpecificSearch from './documentSpecificSearch';
+import directAnswerService from './directAnswerService';
 
 class RAGDocumentService {
   constructor() {
@@ -67,6 +68,17 @@ class RAGDocumentService {
     } = options;
 
     try {
+      // 🎯 优先检查直接答案
+      if (directAnswerService.hasDirectAnswer(query)) {
+        console.log('🎯 找到直接答案，立即返回');
+        const directResult = directAnswerService.getDirectAnswer(query);
+        if (directResult) {
+          directResult.metadata.responseTime = Date.now() - startTime;
+          this.updateMetrics(startTime, false);
+          return directResult;
+        }
+      }
+
       // 检查缓存
       const cacheKey = this.generateSearchCacheKey(query, userId, options);
       if (useCache && this.searchCache.has(cacheKey)) {
@@ -168,6 +180,16 @@ class RAGDocumentService {
 
     } catch (error) {
       console.error('❌ 智能搜索失败:', error);
+      
+      // 最后的降级方案：检查是否有直接答案
+      if (directAnswerService.hasDirectAnswer(query)) {
+        console.log('🔄 使用直接答案作为降级方案');
+        const directResult = directAnswerService.getDirectAnswer(query);
+        if (directResult) {
+          directResult.metadata.responseTime = Date.now() - startTime;
+          return directResult;
+        }
+      }
       
       // 降级到基础搜索
       const fallbackResults = await this.performBasicSearch(query, userId, maxResults);
