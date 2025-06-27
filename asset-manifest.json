@@ -1,12 +1,12 @@
 {
   "files": {
     "main.css": "/knowledge-assistant/static/css/main.f0147ec3.css",
-    "main.js": "/knowledge-assistant/static/js/main.03363eea.js",
+    "main.js": "/knowledge-assistant/static/js/main.af7b61bb.js",
     "static/js/206.fc80db7b.chunk.js": "/knowledge-assistant/static/js/206.fc80db7b.chunk.js",
     "index.html": "/knowledge-assistant/index.html"
   },
   "entrypoints": [
     "static/css/main.f0147ec3.css",
-    "static/js/main.03363eea.js"
+    "static/js/main.af7b61bb.js"
   ]
 }
