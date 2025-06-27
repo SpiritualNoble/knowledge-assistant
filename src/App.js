@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
+import UnifiedChatPage from './pages/UnifiedChatPage';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
 import ChatPage from './pages/ChatPage';
@@ -49,7 +50,9 @@ function App() {
             onLogout={handleLogout}
           />
         }>
-          <Route index element={<HomePage user={user} />} />
+          {/* 主页改为统一聊天界面 */}
+          <Route index element={<UnifiedChatPage user={user} />} />
+          <Route path="home" element={<HomePage user={user} />} />
           <Route path="search" element={<SearchPage user={user} />} />
           <Route path="chat" element={<ChatPage user={user} />} />
           <Route path="upload" element={<UploadPage user={user} />} />

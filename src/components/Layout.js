@@ -11,10 +11,7 @@ export default function Layout({ user, onLogin, onLogout }) {
   const location = useLocation();
   
   const navigation = [
-    { name: '首页', href: '/' },
-    { name: '搜索知识', href: '/search' },
-    { name: '智能对话', href: '/chat' },
-    { name: '上传文档', href: '/upload' },
+    { name: '智能助手', href: '/' },
     { name: '文档管理', href: '/documents' },
     { name: '关于', href: '/about' },
   ];
@@ -28,8 +25,8 @@ export default function Layout({ user, onLogin, onLogout }) {
               <div className="flex h-16 justify-between">
                 <div className="flex">
                   <div className="flex flex-shrink-0 items-center">
-                    <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                      <span className="text-white font-bold text-sm">知</span>
+                    <div className="h-8 w-8 bg-gradient-to-r from-blue-500 to-green-500 rounded-lg flex items-center justify-center">
+                      <span className="text-white font-bold text-sm">智</span>
                     </div>
                     <span className="ml-2 text-xl font-bold text-gray-900">智能知识助手</span>
                   </div>
@@ -157,10 +154,8 @@ export default function Layout({ user, onLogin, onLogout }) {
         )}
       </Disclosure>
 
-      <main className="py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <Outlet />
-        </div>
+      <main>
+        <Outlet />
       </main>
     </div>
   );
