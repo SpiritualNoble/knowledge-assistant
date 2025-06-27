@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import HomePage from './pages/HomePage';
 import SearchPage from './pages/SearchPage';
+import ChatPage from './pages/ChatPage';
 import UploadPage from './pages/UploadPage';
 import DocumentsPage from './pages/DocumentsPage';
 import AboutPage from './pages/AboutPage';
@@ -50,6 +51,7 @@ function App() {
         }>
           <Route index element={<HomePage user={user} />} />
           <Route path="search" element={<SearchPage user={user} />} />
+          <Route path="chat" element={<ChatPage user={user} />} />
           <Route path="upload" element={<UploadPage user={user} />} />
           <Route path="documents" element={<DocumentsPage user={user} />} />
           <Route path="about" element={<AboutPage />} />

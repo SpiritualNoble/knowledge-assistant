@@ -13,6 +13,7 @@ export default function Layout({ user, onLogin, onLogout }) {
   const navigation = [
     { name: '首页', href: '/' },
     { name: '搜索知识', href: '/search' },
+    { name: '智能对话', href: '/chat' },
     { name: '上传文档', href: '/upload' },
     { name: '文档管理', href: '/documents' },
     { name: '关于', href: '/about' },

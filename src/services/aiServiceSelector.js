@@ -16,15 +16,8 @@ class AIServiceSelector {
   }
 
   async initializeService() {
-    // 在生产环境中优先使用OpenAI
-    if (process.env.NODE_ENV === 'production') {
-      console.log('🌐 生产环境：使用OpenAI GPT-3.5 Turbo');
-      this.currentService = openaiService;
-      this.isLocalAIAvailable = false;
-      this.initialized = true;
-      return;
-    }
-
+    console.log('🚀 初始化AI服务选择器...');
+    
     // 检查是否启用本地AI服务
     const enableLocalAI = process.env.REACT_APP_ENABLE_LOCAL_AI === 'true';
     const localAIUrl = process.env.REACT_APP_LOCAL_AI_URL || 'http://localhost:5001';
@@ -41,16 +34,26 @@ class AIServiceSelector {
           this.isLocalAIAvailable = true;
           this.currentService = localAIService;
           console.log('✅ 使用本地Qwen3-Embedding-8B模型');
+          this.initialized = true;
           return;
         }
       } catch (error) {
-        console.warn('⚠️ 本地AI服务不可用，切换到OpenAI模式');
+        console.warn('⚠️ 本地AI服务不可用，切换到智能文档服务');
       }
     }
 
-    // 回退到OpenAI服务
-    console.log('🤖 使用OpenAI GPT-3.5 Turbo');
-    this.currentService = openaiService;
+    // 检查OpenAI API密钥是否可用
+    if (openaiService.hasApiKey()) {
+      console.log('🤖 使用OpenAI GPT-3.5 Turbo');
+      this.currentService = openaiService;
+      this.isLocalAIAvailable = false;
+      this.initialized = true;
+      return;
+    }
+
+    // 回退到智能文档服务（不需要API密钥）
+    console.log('📚 使用智能文档服务（无需API密钥）');
+    this.currentService = intelligentDocumentService;
     this.isLocalAIAvailable = false;
     this.initialized = true;
   }
@@ -125,11 +128,21 @@ class AIServiceSelector {
       };
     }
     
+    if (this.currentService === localAIService) {
+      return {
+        isLocalAI: true,
+        serviceName: 'Qwen3-Embedding-8B (本地)',
+        status: this.currentService ? 'ready' : 'initializing',
+        type: 'local_ai'
+      };
+    }
+    
+    // 智能文档服务
     return {
-      isLocalAI: this.isLocalAIAvailable,
-      serviceName: this.isLocalAIAvailable ? 'Qwen3-Embedding-8B (本地)' : 'Browser AI (浏览器)',
+      isLocalAI: false,
+      serviceName: '智能文档服务 (无需API)',
       status: this.currentService ? 'ready' : 'initializing',
-      type: this.isLocalAIAvailable ? 'local_ai' : 'browser_ai'
+      type: 'document_service'
     };
   }
 }

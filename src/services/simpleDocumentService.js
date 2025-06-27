@@ -16,6 +16,7 @@ class SimpleDocumentService {
         category: document.category || 'general',
         tags: document.tags || [],
         uploadedAt: new Date().toISOString(),
+        size: document.size || 0, // 确保size有默认值
         source: document.source || 'manual'
       };
 
@@ -49,7 +50,7 @@ class SimpleDocumentService {
         category: metadata.category || 'general',
         tags: metadata.tags || [],
         uploadedAt: new Date().toISOString(),
-        size: file.size
+        size: file.size || 0 // 确保size有默认值
       };
       
       // 保存到localStorage

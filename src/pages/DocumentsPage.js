@@ -93,11 +93,22 @@ const DocumentsPage = ({ user }) => {
   };
 
   const formatFileSize = (bytes) => {
-    if (bytes === 0) return '0 Bytes';
+    if (!bytes || bytes === 0 || isNaN(bytes)) return '未知大小';
     const k = 1024;
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  const formatUploadDate = (dateString) => {
+    if (!dateString) return '未知时间';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '未知时间';
+      return date.toLocaleDateString('zh-CN');
+    } catch (error) {
+      return '未知时间';
+    }
   };
 
   if (loading) {
@@ -137,7 +148,7 @@ const DocumentsPage = ({ user }) => {
                       </h3>
                       <p className="text-sm text-gray-500">
                         {formatFileSize(doc.size)} • 
-                        上传于 {new Date(doc.uploadedAt).toLocaleDateString()}
+                        上传于 {formatUploadDate(doc.uploadedAt)}
                       </p>
                       {doc.tags && doc.tags.length > 0 && (
                         <div className="mt-1">
@@ -198,7 +209,7 @@ const DocumentsPage = ({ user }) => {
               </div>
               <div>
                 <span className="font-medium">上传时间：</span>
-                {new Date(selectedDoc.uploadedAt).toLocaleString()}
+                {formatUploadDate(selectedDoc.uploadedAt)}
               </div>
               {selectedDoc.summary && (
                 <div>
