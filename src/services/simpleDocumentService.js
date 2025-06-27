@@ -195,6 +195,7 @@ class SimpleDocumentService {
     return {
       results: results.slice(0, 5),
       answer,
+      intelligentAnswer: answer, // 添加这个字段以兼容UnifiedChatPage
       confidence: results.length > 0 ? results[0].score : 0,
       totalFound: results.length
     };

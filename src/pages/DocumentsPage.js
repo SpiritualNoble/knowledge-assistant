@@ -198,8 +198,8 @@ const DocumentsPage = ({ user }) => {
                         {doc.title || doc.filename}
                       </h3>
                       <p className="text-sm text-gray-500">
-                        {formatFileSize(doc.size)} • 
-                        上传于 {formatUploadDate(doc.uploadedAt)}
+                        {doc.formattedSize} • 
+                        上传于 {doc.formattedDate}
                       </p>
                       {doc.tags && doc.tags.length > 0 && (
                         <div className="mt-1">
@@ -260,7 +260,7 @@ const DocumentsPage = ({ user }) => {
               </div>
               <div>
                 <span className="font-medium">上传时间：</span>
-                {formatUploadDate(selectedDoc.uploadedAt)}
+                {selectedDoc.formattedDate}
               </div>
               {selectedDoc.summary && (
                 <div>

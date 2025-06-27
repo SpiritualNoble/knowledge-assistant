@@ -101,11 +101,14 @@ export default function UnifiedChatPage({ user }) {
         includeAnswer: true
       });
       
+      console.log('🔍 AI搜索响应:', response);
+      
       let assistantMessage = '';
       
       // 如果有智能回答，优先使用
       if (response.answer || response.intelligentAnswer) {
         assistantMessage = response.answer || response.intelligentAnswer;
+        console.log('✅ 使用AI回答:', assistantMessage.substring(0, 100) + '...');
       } else if (response.results && response.results.length > 0) {
         // 基于搜索结果生成回答
         const topResult = response.results[0];
@@ -114,15 +117,17 @@ export default function UnifiedChatPage({ user }) {
         if (response.results.length > 1) {
           assistantMessage += `\n\n相关文档还包括：${response.results.slice(1, 3).map(r => r.title).join('、')}`;
         }
+        console.log('✅ 基于搜索结果生成回答');
       } else {
         assistantMessage = '抱歉，我在知识库中没有找到相关信息。你可以尝试：\n\n• 换个方式描述问题\n• 上传相关文档来扩充知识库\n• 检查问题是否在我的知识范围内';
+        console.log('⚠️ 没有找到相关信息');
       }
 
       addMessage('assistant', assistantMessage, response.results);
       
     } catch (error) {
       console.error('❌ 对话失败:', error);
-      addMessage('assistant', '抱歉，处理您的消息时出现了错误。请稍后重试。', null, true);
+      addMessage('assistant', `抱歉，处理您的消息时出现了错误：${error.message}`, null, true);
     } finally {
       setIsLoading(false);
     }
