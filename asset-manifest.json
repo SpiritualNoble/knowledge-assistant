@@ -1,12 +1,12 @@
 {
   "files": {
-    "main.css": "/knowledge-assistant/static/css/main.822171b0.css",
-    "main.js": "/knowledge-assistant/static/js/main.d276386b.js",
+    "main.css": "/knowledge-assistant/static/css/main.f0147ec3.css",
+    "main.js": "/knowledge-assistant/static/js/main.2a5ce688.js",
     "static/js/206.fc80db7b.chunk.js": "/knowledge-assistant/static/js/206.fc80db7b.chunk.js",
     "index.html": "/knowledge-assistant/index.html"
   },
   "entrypoints": [
-    "static/css/main.822171b0.css",
-    "static/js/main.d276386b.js"
+    "static/css/main.f0147ec3.css",
+    "static/js/main.2a5ce688.js"
   ]
 }
