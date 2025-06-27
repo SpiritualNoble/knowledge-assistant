@@ -11,6 +11,51 @@ const DocumentsPage = ({ user }) => {
     fetchDocuments();
   }, [user]);
 
+  // 计算文档内容大小（字节）
+  const calculateDocSize = (content) => {
+    if (!content) return 0;
+    return new Blob([content]).size;
+  };
+
+  // 格式化文件大小
+  const formatFileSize = (bytes) => {
+    if (!bytes || bytes === 0 || isNaN(bytes)) return '未知大小';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
+  // 格式化日期
+  const formatDate = (dateString) => {
+    if (!dateString) return '未知时间';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '未知时间';
+      
+      const now = new Date();
+      const diffTime = Math.abs(now - date);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays === 1) {
+        return '今天';
+      } else if (diffDays === 2) {
+        return '昨天';
+      } else if (diffDays <= 7) {
+        return `${diffDays - 1}天前`;
+      } else {
+        return date.toLocaleDateString('zh-CN', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        });
+      }
+    } catch (error) {
+      console.error('日期格式化错误:', error);
+      return '未知时间';
+    }
+  };
+
   const fetchDocuments = async () => {
     if (!user) {
       setLoading(false);
@@ -31,7 +76,14 @@ const DocumentsPage = ({ user }) => {
         
         if (response.ok) {
           const data = await response.json();
-          setDocuments(data.documents || []);
+          const processedDocs = data.documents.map(doc => ({
+            ...doc,
+            size: doc.size || calculateDocSize(doc.content),
+            createdAt: doc.createdAt || doc.uploadedAt || new Date().toISOString(),
+            formattedSize: formatFileSize(doc.size || calculateDocSize(doc.content)),
+            formattedDate: formatDate(doc.createdAt || doc.uploadedAt || new Date().toISOString())
+          }));
+          setDocuments(processedDocs);
           console.log('从云端获取文档成功');
           return;
         } else if (response.status === 401) {
@@ -46,8 +98,15 @@ const DocumentsPage = ({ user }) => {
       
       // 云端API不可用，从智能文档服务获取
       const localDocuments = await aiServiceSelector.getDocuments(user.id);
-      setDocuments(localDocuments);
-      console.log('从智能文档服务获取文档:', localDocuments.length, '个');
+      const processedDocs = localDocuments.map(doc => ({
+        ...doc,
+        size: doc.size || calculateDocSize(doc.content),
+        createdAt: doc.createdAt || doc.created_at || new Date().toISOString(),
+        formattedSize: formatFileSize(doc.size || calculateDocSize(doc.content)),
+        formattedDate: formatDate(doc.createdAt || doc.created_at || new Date().toISOString())
+      }));
+      setDocuments(processedDocs);
+      console.log('从智能文档服务获取文档:', processedDocs.length, '个');
       
     } catch (error) {
       console.error('获取文档失败:', error);
@@ -90,14 +149,6 @@ const DocumentsPage = ({ user }) => {
       console.error('删除文档失败:', error);
       alert('删除失败：' + error.message);
     }
-  };
-
-  const formatFileSize = (bytes) => {
-    if (!bytes || bytes === 0 || isNaN(bytes)) return '未知大小';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const formatUploadDate = (dateString) => {

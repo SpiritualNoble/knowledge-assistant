@@ -3,20 +3,59 @@ import { Send, Bot, User, Loader, Search, Upload, Settings, Paperclip } from 'lu
 import aiServiceSelector from '../services/aiServiceSelector';
 
 export default function UnifiedChatPage({ user }) {
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      type: 'assistant',
-      content: '你好！我是智能知识助手，可以帮你搜索知识库、回答问题。你可以：\n\n• 直接问问题，我会从知识库中找答案\n• 上传文档来扩充知识库\n• 进行自然语言对话\n\n有什么可以帮你的吗？',
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [serviceInfo, setServiceInfo] = useState(null);
   const [showUpload, setShowUpload] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
+
+  // 聊天历史记录的localStorage key
+  const getChatHistoryKey = () => user ? `chat_history_${user.id}` : 'chat_history_guest';
+
+  // 加载聊天历史记录
+  useEffect(() => {
+    const loadChatHistory = () => {
+      try {
+        const historyKey = getChatHistoryKey();
+        const savedHistory = localStorage.getItem(historyKey);
+        
+        if (savedHistory) {
+          const parsedHistory = JSON.parse(savedHistory);
+          // 确保历史记录是数组且不为空
+          if (Array.isArray(parsedHistory) && parsedHistory.length > 0) {
+            setMessages(parsedHistory);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('加载聊天历史失败:', error);
+      }
+      
+      // 如果没有历史记录或加载失败，显示欢迎消息
+      setMessages([{
+        id: Date.now(),
+        type: 'assistant',
+        content: '你好！我是智能知识助手，可以帮你搜索知识库、回答问题。你可以：\n\n• 直接问问题，我会从知识库中找答案\n• 上传文档来扩充知识库\n• 进行自然语言对话\n\n有什么可以帮你的吗？',
+        timestamp: new Date()
+      }]);
+    };
+
+    loadChatHistory();
+  }, [user]);
+
+  // 保存聊天历史记录
+  useEffect(() => {
+    if (messages.length > 0) {
+      try {
+        const historyKey = getChatHistoryKey();
+        localStorage.setItem(historyKey, JSON.stringify(messages));
+      } catch (error) {
+        console.error('保存聊天历史失败:', error);
+      }
+    }
+  }, [messages, user]);
 
   useEffect(() => {
     // 获取AI服务信息
@@ -252,7 +291,22 @@ export default function UnifiedChatPage({ user }) {
               <Upload className="w-5 h-5" />
             </button>
             <button
-              onClick={() => setMessages([messages[0]])}
+              onClick={() => {
+                const welcomeMessage = {
+                  id: Date.now(),
+                  type: 'assistant',
+                  content: '你好！我是智能知识助手，可以帮你搜索知识库、回答问题。你可以：\n\n• 直接问问题，我会从知识库中找答案\n• 上传文档来扩充知识库\n• 进行自然语言对话\n\n有什么可以帮你的吗？',
+                  timestamp: new Date()
+                };
+                setMessages([welcomeMessage]);
+                // 清空localStorage中的历史记录
+                try {
+                  const historyKey = getChatHistoryKey();
+                  localStorage.removeItem(historyKey);
+                } catch (error) {
+                  console.error('清空历史记录失败:', error);
+                }
+              }}
               className="px-3 py-1 text-sm text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
             >
               清空对话

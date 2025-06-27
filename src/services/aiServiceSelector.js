@@ -101,22 +101,62 @@ class AIServiceSelector {
     } catch (error) {
       console.error('❌ AI搜索失败:', error);
       
-      // 服务降级逻辑
+      // 检查是否是OpenAI 429错误（配额限制）
+      if (error.message && error.message.includes('429')) {
+        console.log('🔄 OpenAI配额限制，直接切换到智能文档服务');
+        this.currentService = intelligentDocumentService;
+        this.serviceStatus.openai = false;
+        
+        // 使用智能文档服务重新搜索
+        try {
+          const fallbackResult = await intelligentDocumentService.searchDocuments(query, options);
+          // 添加降级提示
+          if (fallbackResult.results && fallbackResult.results.length > 0) {
+            fallbackResult.intelligentAnswer = `已切换到基础搜索模式。找到 ${fallbackResult.results.length} 个相关文档：\n\n${fallbackResult.results[0].content.substring(0, 200)}...`;
+          } else {
+            fallbackResult.intelligentAnswer = '搜索遇到问题，已切换到基础搜索模式。在知识库中没有找到相关信息，请尝试上传相关文档。';
+          }
+          return fallbackResult;
+        } catch (fallbackError) {
+          console.error('智能文档服务也失败:', fallbackError);
+          return {
+            results: [],
+            intelligentAnswer: '搜索服务暂时不可用，请稍后重试。',
+            total: 0,
+            searchType: 'error'
+          };
+        }
+      }
+      
+      // 其他服务降级逻辑
       if (this.currentService === localAIService && this.serviceStatus.openai) {
         console.log('🔄 本地AI服务失败，切换到OpenAI模式');
         this.currentService = openaiService;
         this.serviceStatus.local = false;
-        return await this.currentService.searchDocuments(query, options);
+        try {
+          return await this.currentService.searchDocuments(query, options);
+        } catch (openaiError) {
+          // OpenAI也失败，切换到智能文档服务
+          console.log('🔄 OpenAI也失败，切换到智能文档服务');
+          this.currentService = intelligentDocumentService;
+          return await intelligentDocumentService.searchDocuments(query, options);
+        }
       }
       
       if (this.currentService === openaiService) {
-        console.log('🔄 OpenAI服务失败，切换到简单搜索模式');
+        console.log('🔄 OpenAI服务失败，切换到智能文档服务');
         this.currentService = intelligentDocumentService;
         this.serviceStatus.openai = false;
-        return await this.currentService.searchDocuments(query, options);
+        return await intelligentDocumentService.searchDocuments(query, options);
       }
       
-      throw error;
+      // 如果智能文档服务也失败，返回错误信息
+      return {
+        results: [],
+        intelligentAnswer: `搜索遇到问题：${error.message}。请检查网络连接或稍后重试。`,
+        total: 0,
+        searchType: 'error'
+      };
     }
   }
 
